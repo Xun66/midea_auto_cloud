@@ -1,0 +1,37 @@
+name: Sync upstream release
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild even if already at the latest upstream release
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: sync
+        run: ./sync.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force && '1' || '' }}
+      - if: steps.sync.outputs.tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.sync.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Sync upstream $TAG + local patches"
+          git push
+          gh release view "$TAG-patched" >/dev/null 2>&1 || gh release create "$TAG-patched" --target "$GITHUB_REF_NAME" \
+            --title "$TAG-patched" --notes "Upstream [$TAG](https://github.com/sususweet/midea_auto_cloud/releases/tag/$TAG) + patches/ (see README)."

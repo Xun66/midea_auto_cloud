@@ -1,0 +1,139 @@
+from homeassistant.components.number import NumberEntity
+from homeassistant.const import Platform
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from .core.logger import MideaLogger
+from .midea_entity import MideaEntity
+from .platform_setup import async_setup_platform_entities
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up number entities for Midea devices."""
+    await async_setup_platform_entities(
+        hass,
+        config_entry,
+        async_add_entities,
+        Platform.NUMBER,
+        lambda coordinator, device, manufacturer, rationale, entity_key, ecfg: MideaNumberEntity(
+            coordinator, device, manufacturer, rationale, entity_key, ecfg
+        ),
+    )
+
+
+class MideaNumberEntity(MideaEntity, NumberEntity):
+    """Midea number entity."""
+
+    def __init__(self, coordinator, device, manufacturer, rationale, entity_key, config):
+        super().__init__(
+            coordinator,
+            device.device_id,
+            device.device_name,
+            f"T0x{device.device_type:02X}",
+            device.sn,
+            device.sn8,
+            device.model,
+            entity_key,
+            device=device,
+            manufacturer=manufacturer,
+            rationale=rationale,
+            config=config,
+        )
+        # 从配置中读取数值范围，如果没有则使用默认值
+        self._min_value = self._config.get("min", 0.0)
+        self._max_value = self._config.get("max", 100.0)
+        self._step = self._config.get("step", 1.0)
+        self._mode = self._config.get("mode", "auto")
+        if "device_class" in self._config:
+            self._attr_device_class = self._config["device_class"]
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the current value."""
+        # Use attribute from config if available, otherwise fall back to entity_key
+        attribute = self._config.get("attribute", self._entity_key)
+        value = self._get_nested_value(attribute)
+        
+        if value is None:
+            return None
+            
+        # 确保返回的是数值类型
+        if value == "ff":
+            value = 0
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            MideaLogger.warning(
+                f"Failed to convert value '{value}' to float for number entity {self._entity_key}"
+            )
+            return None
+
+    def _resolve_bound(self, bound: float | str, default: float) -> float:
+        """Resolve a static or attribute-backed bound, falling back when missing/null."""
+        if not isinstance(bound, str):
+            return float(bound)
+        value = self.device_attributes.get(bound)
+        if value is None:
+            return default
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            MideaLogger.warning(
+                f"Failed to convert bound '{bound}' value '{value}' to float "
+                f"for number entity {self._entity_key}; using default {default}"
+            )
+            return default
+
+    @property
+    def native_min_value(self) -> float:
+        """Return the minimum value."""
+        return self._resolve_bound(self._min_value, 0.0)
+
+    @property
+    def native_max_value(self) -> float:
+        """Return the maximum value."""
+        return self._resolve_bound(self._max_value, 100.0)
+
+    @property
+    def native_step(self) -> float:
+        """Return the step value."""
+        return float(self._step)
+
+    @property
+    def mode(self) -> str:
+        """Return the mode of the number entity."""
+        return self._mode
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Set the value of the number entity."""
+        # 确保值在有效范围内
+        # Clamp with the resolved float bounds (native_min_value/native_max_value),
+        # not the raw config values. When min/max are attribute *names* (e.g. the
+        # T0x44 auto-mode limits), the raw values are strings and comparing a float
+        # against them raises "'<' not supported between instances of 'float' and 'str'".
+        value = max(self.native_min_value, min(self.native_max_value, value))
+
+        # 首先尝试使用command字段（如果存在）
+        command = self._config.get("command")
+        if command and isinstance(command, dict):
+            # 替换{value}模板
+            import copy
+            merged_command = copy.deepcopy(command)
+            for key, val in merged_command.items():
+                if isinstance(val, str) and "{value}" in val:
+                    merged_command[key] = val.replace("{value}", str(int(value)))
+            await self.async_set_attributes(merged_command)
+            return
+        
+        # Use attribute from config if available, otherwise fall back to entity_key
+        attribute = self._config.get("attribute", self._entity_key)
+        
+        # 如果配置中指定了转换函数或映射，可以在这里处理
+        # 否则直接设置属性值
+        await self.async_set_attribute(attribute, str(int(value)))
+

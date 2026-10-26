@@ -1,0 +1,345 @@
+from homeassistant.components.light import LightEntity, LightEntityFeature, ColorMode
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from .core.logger import MideaLogger
+from .midea_entity import MideaEntity
+from .platform_setup import async_setup_platform_entities
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    await async_setup_platform_entities(
+        hass,
+        config_entry,
+        async_add_entities,
+        Platform.LIGHT,
+        lambda coordinator, device, manufacturer, rationale, entity_key, ecfg: MideaLightEntity(
+            coordinator, device, manufacturer, rationale, entity_key, ecfg
+        ),
+    )
+
+
+class MideaLightEntity(MideaEntity, LightEntity):
+    def __init__(self, coordinator, device, manufacturer, rationale, entity_key, config):
+        super().__init__(
+            coordinator,
+            device.device_id,
+            device.device_name,
+            f"T0x{device.device_type:02X}",
+            device.sn,
+            device.sn8,
+            device.model,
+            entity_key,
+            device=device,
+            manufacturer=manufacturer,
+            rationale=rationale,
+            config=config,
+        )
+        self._key_power = self._config.get("power")
+        self._key_preset_modes = self._config.get("preset_modes")
+        self._key_brightness = self._config.get("brightness")
+        self._key_color_temp = self._config.get("color_temp")
+        self._command = self._config.get("command")
+
+        # 检测亮度配置类型：范围 [min, max] 或嵌套格式 {"brightness": [min, max]}
+        self._brightness_is_range = False
+        self._brightness_min = 0
+        self._brightness_max = 255
+        self._brightness_key = "brightness"  # 默认键名
+        
+        if self._key_brightness:
+            if isinstance(self._key_brightness, list) and len(self._key_brightness) == 2:
+                # 直接范围格式：[min, max]
+                if isinstance(self._key_brightness[0], (int, float)) and isinstance(self._key_brightness[1], (int, float)):
+                    self._brightness_is_range = True
+                    self._brightness_min = self._key_brightness[0]
+                    self._brightness_max = self._key_brightness[1]
+            elif isinstance(self._key_brightness, dict):
+                # 嵌套格式：{"brightness": [min, max]} 或其他键名
+                for key, value in self._key_brightness.items():
+                    if isinstance(value, list) and len(value) == 2:
+                        if isinstance(value[0], (int, float)) and isinstance(value[1], (int, float)):
+                            self._brightness_is_range = True
+                            self._brightness_min = value[0]
+                            self._brightness_max = value[1]
+                            self._brightness_key = key
+                            break
+
+        # 检测色温配置类型：直接格式 或 嵌套格式
+        self._color_temp_is_range = False
+        self._color_temp_min = 2700  # 默认最小色温（暖白）
+        self._color_temp_max = 6500  # 默认最大色温（冷白）
+        self._color_temp_key = "color_temp"  # 默认键名
+        self._color_temp_device_range = [1, 100]  # 默认设备范围
+
+        if self._key_color_temp:
+            # 直接格式：{"kelvin_range": [min, max], "device_range": [min, max]}
+            if isinstance(self._key_color_temp, dict):
+                # 检查是否为直接格式（包含kelvin_range和device_range）
+                if "kelvin_range" in self._key_color_temp and "device_range" in self._key_color_temp:
+                    kelvin_range = self._key_color_temp["kelvin_range"]
+                    device_range = self._key_color_temp["device_range"]
+                    if (
+                        isinstance(kelvin_range, list)
+                        and len(kelvin_range) == 2
+                        and isinstance(device_range, list)
+                        and len(device_range) == 2
+                    ):
+                        self._color_temp_is_range = True
+                        self._color_temp_min = kelvin_range[0]
+                        self._color_temp_max = kelvin_range[1]
+                        self._color_temp_device_range = device_range
+                        # 直接格式没有外层key，使用默认键名
+                        self._color_temp_key = "color_temp"
+
+                # 嵌套格式：{"color_temperature": {"kelvin_range": [min, max], "device_range": [min, max]}}
+                else:
+                    # 遍历字典中的每个键值对
+                    for key, value in self._key_color_temp.items():
+                        if isinstance(value, dict):
+                            # 检测嵌套格式
+                            if "kelvin_range" in value and "device_range" in value:
+                                kelvin_range = value["kelvin_range"]
+                                device_range = value["device_range"]
+                                if (
+                                    isinstance(kelvin_range, list)
+                                    and len(kelvin_range) == 2
+                                    and isinstance(device_range, list)
+                                    and len(device_range) == 2
+                                ):
+                                    self._color_temp_is_range = True
+                                    self._color_temp_min = kelvin_range[0]
+                                    self._color_temp_max = kelvin_range[1]
+                                    self._color_temp_device_range = device_range
+                                    self._color_temp_key = key
+                                    break
+
+    @property
+    def supported_features(self):
+        features = LightEntityFeature(0)
+        if self._key_preset_modes is not None and len(self._key_preset_modes) > 0:
+            features |= LightEntityFeature.EFFECT
+        return features
+
+    @property
+    def supported_color_modes(self):
+        """返回支持的色彩模式"""
+        modes = set()
+        if self._brightness_is_range and self._color_temp_is_range:
+            # 如果同时支持亮度和色温，优先支持色温模式（更高级的功能）
+            modes.add(ColorMode.COLOR_TEMP)
+        elif self._brightness_is_range:
+            modes.add(ColorMode.BRIGHTNESS)
+        elif self._color_temp_is_range:
+            modes.add(ColorMode.COLOR_TEMP)
+        else:
+            modes.add(ColorMode.ONOFF)
+        return modes
+
+    @property
+    def color_mode(self):
+        """返回当前色彩模式"""
+        if self._brightness_is_range and self._color_temp_is_range:
+            # 如果同时支持亮度和色温，优先返回色温模式（与supported_color_modes保持一致）
+            return ColorMode.COLOR_TEMP
+        elif self._brightness_is_range:
+            return ColorMode.BRIGHTNESS
+        elif self._color_temp_is_range:
+            return ColorMode.COLOR_TEMP
+        return ColorMode.ONOFF
+
+    @property
+    def is_on(self) -> bool:
+        if self._key_power is None:
+            return False
+        value = self._get_nested_value(self._key_power)
+        if value is None:
+            return False
+        try:
+            return bool(self._rationale.index(value))
+        except ValueError:
+            return False
+
+    @property
+    def effect_list(self):
+        return list(self._key_preset_modes.keys())
+
+    @property
+    def effect(self):
+        return self._dict_get_selected(self._key_preset_modes)
+
+    @property
+    def brightness(self):
+        """返回0-255范围内的亮度值（Home Assistant标准）"""
+        if not self._brightness_is_range:
+            return None
+            
+        # 范围模式：从设备属性读取亮度值，使用配置的键名
+        brightness_value = self._get_nested_value(self._brightness_key)
+        if brightness_value is not None:
+            brightness_value = int(brightness_value)
+        if brightness_value is not None:
+            # 配置是[0, 255]直接使用
+            if self._brightness_min == 0 and self._brightness_max == 255:
+                return max(1, min(255, brightness_value))
+            else:
+                # 正常范围映射
+                device_range = self._brightness_max - self._brightness_min
+                if device_range > 0:
+                    ha_brightness = round((brightness_value - self._brightness_min) * 255 / device_range)
+                    return max(1, min(255, ha_brightness))
+        return None
+
+    @property
+    def color_temp_kelvin(self):
+        """返回当前色温值（开尔文）"""
+        if not self._color_temp_is_range:
+            return None
+
+        # 从设备属性读取色温值
+        color_temp_value = self._get_nested_value(self._color_temp_key)
+        if color_temp_value is not None:
+            try:
+                device_value = int(color_temp_value)
+                device_min, device_max = self._color_temp_device_range
+
+                # 将设备值转换为开尔文值
+                kelvin_range = self._color_temp_max - self._color_temp_min
+                if kelvin_range > 0:
+                    # 将设备值映射到开尔文范围
+                    device_range = device_max - device_min
+                    if device_range > 0:
+                        # 设备值 -> 开尔文
+                        normalized = (device_value - device_min) / device_range
+                        ha_color_temp = self._color_temp_min + normalized * kelvin_range
+                        return round(ha_color_temp)
+                    else:
+                        return self._color_temp_min
+                else:
+                    return self._color_temp_min
+            except (ValueError, TypeError):
+                return None
+        return None
+
+    @property
+    def min_color_temp_kelvin(self):
+        """返回支持的最小色温值（开尔文）"""
+        if self._color_temp_is_range:
+            return self._color_temp_min
+        return None
+
+    @property
+    def max_color_temp_kelvin(self):
+        """返回支持的最大色温值（开尔文）"""
+        if self._color_temp_is_range:
+            return self._color_temp_max
+        return None
+
+    async def async_turn_on(
+            self,
+            brightness: int | None = None,
+            brightness_pct: int | None = None,
+            percentage: int | None = None,
+            color_temp_kelvin: int | None = None,
+            effect: str | None = None,
+            preset_mode: str | None = None,
+            **kwargs,
+    ):
+        new_status = {}
+        if effect is not None and self._key_preset_modes is not None:
+            effect_config = self._key_preset_modes.get(effect, {})
+            new_status.update(effect_config)
+        
+        # 处理亮度设置 - 支持多种参数格式
+        target_brightness = None
+        if brightness is not None:
+            # Home Assistant标准：0-255范围
+            target_brightness = brightness
+        elif brightness_pct is not None:
+            # 百分比格式：0-100范围，转换为0-255
+            target_brightness = round(brightness_pct * 255 / 100)
+        elif percentage is not None:
+            # 兼容旧格式：0-100范围，转换为0-255
+            target_brightness = round(percentage * 255 / 100)
+            
+        if target_brightness is not None and self._key_brightness and self._brightness_is_range:
+            # 范围模式：将Home Assistant的0-255映射到设备范围
+            target_brightness = max(0, min(255, target_brightness))
+
+            # 配置是[0, 255]直接使用
+            if self._brightness_min == 0 and self._brightness_max == 255:
+                device_brightness = target_brightness
+            else:
+                # 正常范围映射
+                device_range = self._brightness_max - self._brightness_min
+                if device_range > 0:
+                    device_brightness = round(self._brightness_min + (target_brightness / 255.0) * device_range)
+                    device_brightness = max(self._brightness_min, min(self._brightness_max, device_brightness))
+                else:
+                    return
+            new_status[self._brightness_key] = device_brightness
+        
+        # 处理色温设置
+        if color_temp_kelvin is not None and self._color_temp_is_range:
+            # 确保色温值在配置的范围内
+            ha_color_temp = max(self._color_temp_min, min(self._color_temp_max, color_temp_kelvin))
+
+            device_min, device_max = self._color_temp_device_range
+
+            kelvin_range = self._color_temp_max - self._color_temp_min
+            if kelvin_range > 0:
+                device_range = device_max - device_min
+                if device_range > 0:
+                    normalized = (ha_color_temp - self._color_temp_min) / kelvin_range
+                    device_value = round(device_min + normalized * device_range)
+                    device_value = max(device_min, min(device_max, device_value))
+                else:
+                    device_value = device_min
+            else:
+                device_value = device_min
+
+            new_status[self._color_temp_key] = str(device_value)
+
+        # 部分 0x13 风扇灯协议用 if/elseif 互斥组包：电源与亮度/色温/场景不能同包下发
+        if self._key_power and not self.is_on:
+            power_status = {self._key_power: self._rationale[1]}
+            if self._command and isinstance(self._command, dict):
+                merged = dict(self._command)
+                merged.update(power_status)
+                power_status = merged
+            await self.async_set_attributes(power_status)
+        elif self._key_power and not new_status:
+            new_status[self._key_power] = self._rationale[1]
+
+        if self._command and isinstance(self._command, dict):
+            merged = dict(self._command)
+            merged.update(new_status)
+            new_status = merged
+
+        if new_status:
+            # 色温与亮度在同类设备上也是互斥命令，同时存在时拆成两次下发
+            if (
+                self._brightness_is_range
+                and self._color_temp_is_range
+                and self._brightness_key in new_status
+                and self._color_temp_key in new_status
+            ):
+                color_status = {self._color_temp_key: new_status.pop(self._color_temp_key)}
+                await self.async_set_attributes(color_status)
+            await self.async_set_attributes(new_status)
+
+    async def async_turn_off(self):
+        if not self._key_power:
+            return
+        new_status = {self._key_power: self._rationale[0]}
+        if self._command and isinstance(self._command, dict):
+            merged = dict(self._command)
+            merged.update(new_status)
+            new_status = merged
+        await self.async_set_attributes(new_status)

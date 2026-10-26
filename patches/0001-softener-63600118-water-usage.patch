@@ -1,0 +1,29 @@
+diff --git a/custom_components/midea_auto_cloud/device_mapping/T0xED.py b/custom_components/midea_auto_cloud/device_mapping/T0xED.py
+index 6d51bdd..9e059a6 100644
+--- a/custom_components/midea_auto_cloud/device_mapping/T0xED.py
++++ b/custom_components/midea_auto_cloud/device_mapping/T0xED.py
+@@ -1040,6 +1040,24 @@ DEVICE_MAPPING = {
+                     "state_class": SensorStateClass.MEASUREMENT,
+                     "translation_key": "soft_available_big",
+                 },
++                # 累计用水量 (L)，与 App 用水统计 (/cfhrs/ed/v1/api) 年度合计一致
++                "water_consumption_big": {
++                    "device_class": SensorDeviceClass.WATER,
++                    "unit_of_measurement": UnitOfVolume.LITERS,
++                    "state_class": SensorStateClass.TOTAL_INCREASING,
++                    "translation_key": "water_consumption_big",
++                },
++                "water_consumption_today": {
++                    "device_class": SensorDeviceClass.WATER,
++                    "unit_of_measurement": UnitOfVolume.LITERS,
++                    "state_class": SensorStateClass.TOTAL_INCREASING,
++                    "translation_key": "water_consumption_today",
++                },
++                "water_consumption_average": {
++                    "unit_of_measurement": UnitOfVolume.LITERS,
++                    "state_class": SensorStateClass.MEASUREMENT,
++                    "translation_key": "water_consumption_average",
++                },
+                 "battery_voltage": {
+                     "device_class": SensorDeviceClass.VOLTAGE,
+                     "unit_of_measurement": UnitOfElectricPotential.VOLT,
