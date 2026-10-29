@@ -42,6 +42,7 @@ DEVICE_MAPPING = {
                     "rationale": ["0", "1"],
                     "name_attribute": "endpoint_1_name",
                     "attribute": "endpoint_1_OnOff",
+                    "translation_key": "endpoint_1_onoff",
                 },
             }
         }
@@ -59,12 +60,14 @@ DEVICE_MAPPING = {
                     "rationale": ["0", "1"],
                     "name_attribute": "endpoint_1_name",
                     "attribute": "endpoint_1_OnOff",
+                    "translation_key": "endpoint_1_onoff",
                 },
                 "endpoint_2_OnOff": {
                     "device_class": SwitchDeviceClass.SWITCH,
                     "rationale": ["0", "1"],
                     "name_attribute": "endpoint_2_name",
                     "attribute": "endpoint_2_OnOff",
+                    "translation_key": "endpoint_2_onoff",
                 },
             }
         }
@@ -82,18 +85,21 @@ DEVICE_MAPPING = {
                     "rationale": ["0", "1"],
                     "name_attribute": "endpoint_1_name",
                     "attribute": "endpoint_1_OnOff",
+                    "translation_key": "endpoint_1_onoff",
                 },
                 "endpoint_2_OnOff": {
                     "device_class": SwitchDeviceClass.SWITCH,
                     "rationale": ["0", "1"],
                     "name_attribute": "endpoint_2_name",
                     "attribute": "endpoint_2_OnOff",
+                    "translation_key": "endpoint_2_onoff",
                 },
                 "endpoint_3_OnOff": {
                     "device_class": SwitchDeviceClass.SWITCH,
                     "rationale": ["0", "1"],
                     "name_attribute": "endpoint_3_name",
                     "attribute": "endpoint_3_OnOff",
+                    "translation_key": "endpoint_3_onoff",
                 },
             }
         }
@@ -111,35 +117,51 @@ DEVICE_MAPPING = {
                     "rationale": ["0", "1"],
                     "name_attribute": "endpoint_1_name",
                     "attribute": "endpoint_1_OnOff",
+                    "translation_key": "endpoint_1_onoff",
                 },
                 "endpoint_2_OnOff": {
                     "device_class": SwitchDeviceClass.SWITCH,
                     "rationale": ["0", "1"],
                     "name_attribute": "endpoint_2_name",
                     "attribute": "endpoint_2_OnOff",
+                    "translation_key": "endpoint_2_onoff",
                 },
                 "endpoint_3_OnOff": {
                     "device_class": SwitchDeviceClass.SWITCH,
                     "rationale": ["0", "1"],
                     "name_attribute": "endpoint_3_name",
                     "attribute": "endpoint_3_OnOff",
+                    "translation_key": "endpoint_3_onoff",
                 },
                 "endpoint_4_OnOff": {
                     "device_class": SwitchDeviceClass.SWITCH,
                     "rationale": ["0", "1"],
                     "name_attribute": "endpoint_4_name",
                     "attribute": "endpoint_4_OnOff",
+                    "translation_key": "endpoint_4_onoff",
                 },
             }
         }
     },
 
-    # SN8 为 00000000 的默认配置（当 subtype 不匹配时使用）
-    "00000000": {
+    # COLMO / Meiju electric curtains share device type T0x21 with central AC
+    # and often report placeholder sn8 00000000 (issue #271). Prefer this over
+    # the central-AC default so curtains are not mapped as climate.
+    # Open/close/position control needs Lua + protocol attribute keys from the
+    # device-status entity / plugin before a Cover mapping can be added.
+    "default_electric_curtain": {
         "rationale": ["0", "1"],
         "queries": [{}],
         "centralized": [],
-        "entities": {}
+        "entities": {},
+    },
+
+    # COLMO WSCMT curtain panel node (subtype 3043)
+    ("subtype", "3043"): {
+        "rationale": ["0", "1"],
+        "queries": [{}],
+        "centralized": [],
+        "entities": {},
     },
 
     # 中央空调默认配置
