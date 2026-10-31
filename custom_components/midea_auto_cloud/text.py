@@ -18,9 +18,9 @@ async def async_setup_entry(
         config_entry,
         async_add_entities,
         Platform.TEXT,
-        lambda coordinator, device, manufacturer, rationale, entity_key, ecfg: MideaTextEntity(
-            coordinator, device, manufacturer, rationale, entity_key, ecfg
-        ),
+        lambda coordinator, device, manufacturer, rationale, entity_key, ecfg: (
+            _zero_cold_appoint_text() if ecfg.get("zero_cold_appoint") else MideaTextEntity
+        )(coordinator, device, manufacturer, rationale, entity_key, ecfg),
     )
 
 
@@ -60,3 +60,9 @@ class MideaTextEntity(MideaEntity, TextEntity):
     async def async_set_value(self, value: str) -> None:
         attribute = self._config.get("attribute", self._entity_key)
         await self.async_set_attribute(attribute, value)
+
+
+def _zero_cold_appoint_text():
+    from .zero_cold_appoint import ZeroColdAppointText  # imports this module; avoid a cycle
+
+    return ZeroColdAppointText

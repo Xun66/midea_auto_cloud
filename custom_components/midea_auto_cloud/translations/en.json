@@ -4825,11 +4825,35 @@
       },
       "turbo": {
         "name": "Turbo"
+      },
+      "zero_cold_appoint_1_enable": {
+        "name": "Zero-cold schedule 1 enabled"
+      },
+      "zero_cold_appoint_2_enable": {
+        "name": "Zero-cold schedule 2 enabled"
+      },
+      "zero_cold_appoint_3_enable": {
+        "name": "Zero-cold schedule 3 enabled"
+      },
+      "zero_cold_appoint_4_enable": {
+        "name": "Zero-cold schedule 4 enabled"
       }
     },
     "text": {
       "external_humidity_sensor": {
         "name": "External Humidity Sensor"
+      },
+      "zero_cold_appoint_1": {
+        "name": "Zero-cold schedule 1"
+      },
+      "zero_cold_appoint_2": {
+        "name": "Zero-cold schedule 2"
+      },
+      "zero_cold_appoint_3": {
+        "name": "Zero-cold schedule 3"
+      },
+      "zero_cold_appoint_4": {
+        "name": "Zero-cold schedule 4"
       }
     },
     "vacuum": {

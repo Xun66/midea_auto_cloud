@@ -205,3 +205,23 @@ DEVICE_MAPPING = {
         }
     }
 }
+
+# 定时零冷水: models with the device-side 4-slot schedule also poll the "predict" query and get
+# a text + switch per slot (entities in zero_cold_appoint.py).
+from copy import deepcopy as _deepcopy
+from ._zero_cold_appoint import APPOINT_SN8 as _APPOINT_SN8, PREDICT_QUERY as _PREDICT_QUERY, SLOT_ATTRS as _SLOT_ATTRS
+
+_appoint = _deepcopy(DEVICE_MAPPING["default"])
+_appoint["queries"].append(_PREDICT_QUERY)
+for _i, _attr in enumerate(_SLOT_ATTRS, 1):
+    _appoint["entities"].setdefault(Platform.TEXT, {})[f"zero_cold_appoint_{_i}"] = {
+        "attribute": _attr,
+        "zero_cold_appoint": True,
+        "icon": "mdi:calendar-clock",
+    }
+    _appoint["entities"][Platform.SWITCH][f"zero_cold_appoint_{_i}_enable"] = {
+        "attribute": _attr,
+        "zero_cold_appoint": True,
+        "icon": "mdi:calendar-check",
+    }
+DEVICE_MAPPING[_APPOINT_SN8] = _appoint

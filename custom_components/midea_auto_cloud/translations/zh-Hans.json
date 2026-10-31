@@ -5167,11 +5167,35 @@
       },
       "turbo": {
         "name": "加速"
+      },
+      "zero_cold_appoint_1_enable": {
+        "name": "定时零冷水 1 开关"
+      },
+      "zero_cold_appoint_2_enable": {
+        "name": "定时零冷水 2 开关"
+      },
+      "zero_cold_appoint_3_enable": {
+        "name": "定时零冷水 3 开关"
+      },
+      "zero_cold_appoint_4_enable": {
+        "name": "定时零冷水 4 开关"
       }
     },
     "text": {
       "external_humidity_sensor": {
         "name": "外部湿度传感器"
+      },
+      "zero_cold_appoint_1": {
+        "name": "定时零冷水 1"
+      },
+      "zero_cold_appoint_2": {
+        "name": "定时零冷水 2"
+      },
+      "zero_cold_appoint_3": {
+        "name": "定时零冷水 3"
+      },
+      "zero_cold_appoint_4": {
+        "name": "定时零冷水 4"
       }
     },
     "vacuum": {
