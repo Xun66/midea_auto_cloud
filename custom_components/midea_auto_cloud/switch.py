@@ -21,7 +21,7 @@ async def async_setup_entry(
         async_add_entities,
         Platform.SWITCH,
         lambda coordinator, device, manufacturer, rationale, entity_key, ecfg: (
-            _zero_cold_appoint_switch() if ecfg.get("zero_cold_appoint") else MideaSwitchEntity
+            _zero_cold_entity(ecfg["zero_cold_appoint"]) if ecfg.get("zero_cold_appoint") else MideaSwitchEntity
         )(coordinator, device, manufacturer, rationale, entity_key, ecfg),
     )
 
@@ -131,7 +131,7 @@ class MideaSwitchEntity(MideaEntity, SwitchEntity):
         await self.coordinator.async_send_switch_control(control)
 
 
-def _zero_cold_appoint_switch():
-    from .zero_cold_appoint import ZeroColdAppointSwitch  # imports this module; avoid a cycle
+def _zero_cold_entity(kind):
+    from .zero_cold_appoint import ENTITY_CLASSES  # imports this module; avoid a cycle
 
-    return ZeroColdAppointSwitch
+    return ENTITY_CLASSES[kind]

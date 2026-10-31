@@ -355,6 +355,13 @@ class MideaDataUpdateCoordinator(DataUpdateCoordinator[MideaDeviceData]):
             await self._poll_cloud_electricity(cloud, now)
         if cloud_queries.get("water_power") and self._should_poll_cloud("water_power", now):
             await self._poll_cloud_water_power(cloud, now, cloud_queries["water_power"])
+        if cloud_queries.get("e3_ai_zero_cold") and self._should_poll_cloud("e3_ai_zero_cold", now):
+            from .zero_cold_appoint import async_poll_ai_zero_cold
+
+            try:
+                await async_poll_ai_zero_cold(cloud, self.device)
+            finally:
+                self._last_cloud_poll["e3_ai_zero_cold"] = now
 
     async def _poll_cloud_electricity(self, cloud, now: datetime) -> None:
         """轮询空调云端电量（月 + 年）。"""

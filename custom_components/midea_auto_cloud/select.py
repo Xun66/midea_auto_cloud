@@ -20,9 +20,9 @@ async def async_setup_entry(
         config_entry,
         async_add_entities,
         Platform.SELECT,
-        lambda coordinator, device, manufacturer, rationale, entity_key, ecfg: MideaSelectEntity(
-            coordinator, device, manufacturer, rationale, entity_key, ecfg
-        ),
+        lambda coordinator, device, manufacturer, rationale, entity_key, ecfg: (
+            _zero_cold_entity(ecfg["zero_cold_appoint"]) if ecfg.get("zero_cold_appoint") else MideaSelectEntity
+        )(coordinator, device, manufacturer, rationale, entity_key, ecfg),
     )
 
 
@@ -168,3 +168,9 @@ class MideaSelectEntity(MideaEntity, SelectEntity):
             await self.async_set_attributes(merged_command)
         else:
             await self.async_set_attributes(new_status)
+
+
+def _zero_cold_entity(kind):
+    from .zero_cold_appoint import ENTITY_CLASSES  # imports this module; avoid a cycle
+
+    return ENTITY_CLASSES[kind]

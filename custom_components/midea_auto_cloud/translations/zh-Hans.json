@@ -2160,6 +2160,13 @@
           "big": "大冰",
           "small": "小冰"
         }
+      },
+      "ai_zero_cold_mode": {
+        "name": "AI零冷水 定时方式",
+        "state": {
+          "custom": "自定义定时",
+          "ai": "AI定时"
+        }
       }
     },
     "sensor": {
@@ -5179,6 +5186,9 @@
       },
       "zero_cold_appoint_4_enable": {
         "name": "定时零冷水 4 开关"
+      },
+      "ai_zero_cold": {
+        "name": "AI零冷水"
       }
     },
     "text": {

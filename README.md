@@ -16,6 +16,9 @@ If a patch stops applying the workflow fails and nothing is published.
   定时零冷水 schedule (231 sn8s, e.g. `511018ZH` JSQ30-M9R Ultra): poll the lua `predict` query and add,
   per slot (4), a text entity `22:30-01:00 daily` / `07:00-07:30 mon-fri` / `06:00-06:30 sat once`
   (empty = delete) and an on/off switch. Same slots as the 美居 app, so edits show up on both sides.
+  Also adds the AI 零冷水 switch and its mode select (custom / AI-learned schedule) from the hot-water
+  cloud; turning them on/off rewrites the 4 slots the same way the app does (backup/restore of the
+  custom schedule on the server, learned windows written as slots).
 
 ## Install (HACS)
 

@@ -1885,6 +1885,13 @@
           "big": "Large Ice",
           "small": "Small Ice"
         }
+      },
+      "ai_zero_cold_mode": {
+        "name": "AI zero-cold schedule",
+        "state": {
+          "custom": "Custom schedule",
+          "ai": "AI schedule"
+        }
       }
     },
     "sensor": {
@@ -4837,6 +4844,9 @@
       },
       "zero_cold_appoint_4_enable": {
         "name": "Zero-cold schedule 4 enabled"
+      },
+      "ai_zero_cold": {
+        "name": "AI zero-cold"
       }
     },
     "text": {

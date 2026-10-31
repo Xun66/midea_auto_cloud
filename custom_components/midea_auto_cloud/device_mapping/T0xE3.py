@@ -206,22 +206,31 @@ DEVICE_MAPPING = {
     }
 }
 
-# 定时零冷水: models with the device-side 4-slot schedule also poll the "predict" query and get
-# a text + switch per slot (entities in zero_cold_appoint.py).
+# 定时零冷水 / AI 零冷水: models with the device-side 4-slot schedule also poll the "predict" query,
+# get a text + switch per slot and the AI zero-cold switch + mode (entities in zero_cold_appoint.py).
 from copy import deepcopy as _deepcopy
 from ._zero_cold_appoint import APPOINT_SN8 as _APPOINT_SN8, PREDICT_QUERY as _PREDICT_QUERY, SLOT_ATTRS as _SLOT_ATTRS
 
 _appoint = _deepcopy(DEVICE_MAPPING["default"])
 _appoint["queries"].append(_PREDICT_QUERY)
+_appoint["cloud_queries"] = {"e3_ai_zero_cold": {"interval": 300}}
 for _i, _attr in enumerate(_SLOT_ATTRS, 1):
     _appoint["entities"].setdefault(Platform.TEXT, {})[f"zero_cold_appoint_{_i}"] = {
         "attribute": _attr,
-        "zero_cold_appoint": True,
+        "zero_cold_appoint": "slot_text",
         "icon": "mdi:calendar-clock",
     }
     _appoint["entities"][Platform.SWITCH][f"zero_cold_appoint_{_i}_enable"] = {
         "attribute": _attr,
-        "zero_cold_appoint": True,
+        "zero_cold_appoint": "slot_switch",
         "icon": "mdi:calendar-check",
     }
+_appoint["entities"][Platform.SWITCH]["ai_zero_cold"] = {
+    "zero_cold_appoint": "ai_switch",
+    "icon": "mdi:robot",
+}
+_appoint["entities"][Platform.SELECT]["ai_zero_cold_mode"] = {
+    "zero_cold_appoint": "ai_mode",
+    "icon": "mdi:calendar-sync",
+}
 DEVICE_MAPPING[_APPOINT_SN8] = _appoint
