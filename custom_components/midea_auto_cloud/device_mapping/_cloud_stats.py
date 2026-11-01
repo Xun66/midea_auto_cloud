@@ -67,6 +67,21 @@ _WATER_POWER_TODAY_SENSORS = {
         "state_class": SensorStateClass.TOTAL_INCREASING,
         "translation_key": "cloud_power_today",
     },
+    # lifetime sums: the ones to pick in the Energy dashboard
+    "cloud_water_total": {
+        "attribute": "cloud_water_total",
+        "device_class": SensorDeviceClass.WATER,
+        "unit_of_measurement": UnitOfVolume.LITERS,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "translation_key": "cloud_water_total",
+    },
+    "cloud_power_total": {
+        "attribute": "cloud_power_total",
+        "device_class": SensorDeviceClass.ENERGY,
+        "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "translation_key": "cloud_power_total",
+    },
 }
 
 _WATER_POWER_SENSORS_DUAL = {

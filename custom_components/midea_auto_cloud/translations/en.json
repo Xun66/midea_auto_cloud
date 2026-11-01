@@ -3098,6 +3098,12 @@
       "cloud_electricity_year": {
         "name": "Yearly Electricity"
       },
+      "cloud_water_total": {
+        "name": "Total Water Usage"
+      },
+      "cloud_power_total": {
+        "name": "Total Electricity Usage"
+      },
       "cloud_water_today": {
         "name": "Today's Water Usage"
       },

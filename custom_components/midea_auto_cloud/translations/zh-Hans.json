@@ -3434,6 +3434,12 @@
       "cloud_electricity_year": {
         "name": "今年耗电量"
       },
+      "cloud_water_total": {
+        "name": "累计用水量"
+      },
+      "cloud_power_total": {
+        "name": "累计用电量"
+      },
       "cloud_water_today": {
         "name": "今日用水量"
       },

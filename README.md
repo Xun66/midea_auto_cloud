@@ -22,8 +22,9 @@ If a patch stops applying the workflow fails and nothing is published.
 - `0003-washer-app-consumption-stats.patch` — washers/dishwashers with single-drum cloud stats
   (T0xDA/DB/E1): read water (L) and electricity (kWh) from the 美居 app's 能耗统计 API
   (`/xyj/washConsumption`) first, falling back to upstream's `getWaterPower`, which returns null for
-  some models (e.g. T0xDB `13633`, DGH-127X20BA). Fills the existing monthly/yearly sensors and adds
-  today's water and electricity sensors for T0xDB.
+  some models (e.g. T0xDB `13633`, DGH-127X20BA). Fills the existing monthly/yearly sensors and adds,
+  for T0xDB, today's and lifetime-total water and electricity sensors. Use the totals in the Energy
+  dashboard (water → *Total Water Usage*, individual device → *Total Electricity Usage*).
 
 ## Install (HACS)
 
