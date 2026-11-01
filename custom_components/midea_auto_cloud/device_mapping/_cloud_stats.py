@@ -51,6 +51,24 @@ _WATER_POWER_SENSORS = {
     },
 }
 
+# filled only by the app 能耗统计 API (wash_consumption.py)
+_WATER_POWER_TODAY_SENSORS = {
+    "cloud_water_today": {
+        "attribute": "cloud_water_today",
+        "device_class": SensorDeviceClass.WATER,
+        "unit_of_measurement": UnitOfVolume.LITERS,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "translation_key": "cloud_water_today",
+    },
+    "cloud_power_today": {
+        "attribute": "cloud_power_today",
+        "device_class": SensorDeviceClass.ENERGY,
+        "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "translation_key": "cloud_power_today",
+    },
+}
+
 _WATER_POWER_SENSORS_DUAL = {
     "cloud_water_month_da": {
         "attribute": "cloud_water_month_da",
@@ -134,7 +152,7 @@ _CLOUD_STATS_REGISTRY: dict[int, dict] = {
         "cloud_queries": {
             "water_power": {"interval": 300},
         },
-        "sensors": _WATER_POWER_SENSORS,
+        "sensors": {**_WATER_POWER_SENSORS, **_WATER_POWER_TODAY_SENSORS},
     },
     0xE1: {
         "cloud_queries": {

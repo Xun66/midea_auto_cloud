@@ -447,6 +447,12 @@ class MideaDataUpdateCoordinator(DataUpdateCoordinator[MideaDeviceData]):
         dual_drum = bool(water_power_cfg.get("dual_drum"))
         today = now.strftime("%Y%m%d")
         try:
+            if not dual_drum:
+                # app 能耗统计 API first (getWaterPower returns null for some washers)
+                from .wash_consumption import async_poll_wash_consumption
+
+                if await async_poll_wash_consumption(cloud, self.device, now):
+                    return
             month_result = await cloud.query_wash_water_power(
                 self._device_id,
                 device_type=device_type,
